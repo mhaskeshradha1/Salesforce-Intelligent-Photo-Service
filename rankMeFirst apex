@@ -1,0 +1,102 @@
+public class Rankmefirst {
+    @auraEnabled
+    public static List<Album__c> getAllAlbums()
+    {
+     List<Album__c> reg = [select id, Name, Description__c, LastModifiedById, OwnerId from Album__c];
+        return reg;
+    } 
+    
+    @auraEnabled
+    public static List<Ranking__c> getFilesForAlbum(String idAlbum)
+    {
+      List<ContentDocumentLink>  cdLists = [SELECT ContentDocumentId FROM ContentDocumentLink WHERE LinkedEntityId = :idAlbum];
+      Set<Id> contentDocumentIds = new Set<Id>();
+        for(ContentDocumentLink c : cdLists) {
+            contentDocumentIds.add(c.ContentDocumentId);
+        }
+        List<ContentDocument> cds =  [SELECT Id, Title, CreatedById, OwnerId FROM ContentDocument WHERE Id IN :contentDocumentIds];
+        List<ContentVersion> cvs =  [SELECT VersionData, CreatedById FROM ContentVersion WHERE ContentDocumentId IN :contentDocumentIds AND IsLatest = true];
+        Integer rankedItems = 0;
+        Map<String, Ranking__c> mapRanks = new Map<String, Ranking__c>();
+        List<Ranking__c> ranks = new List<Ranking__c>();
+        
+        for(ContentVersion c : cvs) {
+            String eventTypeName = getPhotoPrediction(c);
+            String userId = c.CreatedById;            
+            if('NO_RESULT' != eventTypeName ){                
+                String key = userId + '_' + eventTypeName;
+                Ranking__c rank = null;
+                if(mapRanks.containsKey(key)){
+                    rank = mapRanks.get(key);
+                    rank.Rank__c = rank.Rank__c + 1;
+                } else {
+                    rank = getRankByUserNameAndEventTypeName(userId, eventTypeName); 
+                    mapRanks.put(key, rank);
+                    ranks.add(rank);
+                }
+            }
+        }
+        
+        Savepoint sp = Database.setSavepoint();        
+        try{            
+                Database.upsert(mapRanks.values());
+                rankedItems = mapRanks.values().size();           
+        } catch(Exception e){
+            Database.rollback(sp);
+        }        
+        return ranks;     
+    }
+    
+    public static Ranking__c getRankByUserNameAndEventTypeName(String userId, String eventTypeName){
+        try {
+                User user = [Select Username From User where Id= :userId];
+                String email = user.Username;
+                Photographer__c photographer = [Select  Id From Photographer__c where email__c = :user.Username];
+                Event_Type__c event = [Select Id, Name From Event_Type__c where Name = :eventTypeName];
+                String etName = event.Name;        
+                Ranking__c[] ranking = [Select Name, Rank__c, PhotographerName__c, Event_Type_Rank__c 
+                                      from Ranking__c 
+                                      where 
+                                      Event_Type_Rank__c = :event.Id 
+                                      and PhotographerName__c = :photographer.Id];
+                if(ranking.size() > 0){
+                    Ranking__c rank = ranking[0];
+                    rank.Rank__c = rank.Rank__c + 1;
+                    return rank;
+                } else {
+                    Ranking__c rank = new Ranking__c();
+                    rank.Event_Type_Rank__c = event.Id;
+                    rank.PhotographerName__c = photographer.Id;
+                    rank.Rank__c = 1;
+                    return rank; 
+                }            
+        } catch(Exception e){
+             return null;
+        }        
+    }
+    public static String getActiveDataset() {        
+        Active_Dataset__c ad = Active_Dataset__c.getOrgDefaults();
+        return ad.Name__c;
+    }
+    
+    
+    public static String getPhotoPrediction(ContentVersion c) {
+        Blob fileBlob = c.VersionData;        
+        EinsteinVision_PredictionService service = new EinsteinVision_PredictionService();
+        EinsteinVision_Dataset[] datasets = service.getDatasets();
+        String activeDataset =  getActiveDataset();
+        for (EinsteinVision_Dataset dataset : datasets) {            
+            if (dataset.Name.equals(activeDataset)) {
+                EinsteinVision_Model[] models = service.getModels(dataset);
+                EinsteinVision_Model model = models.get(0);
+                EinsteinVision_PredictionResult result = service.predictBlob(model.modelId, fileBlob, '');
+                if(result != null){
+                    return result.probabilities.get(0).label;
+                } else {
+                    return 'NO_RESULT';
+                }
+            }   
+    	}        
+        return 'NO_RESULT';
+    }    
+}
