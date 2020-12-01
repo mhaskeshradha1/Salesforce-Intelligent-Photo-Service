@@ -1,0 +1,45 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,forceCommunity:availableForAllPageTypes" 
+                controller="rankedPhotographersByEventType" 
+                access="global" >
+    <aura:attribute name="reg" type="ContentDocument[]"/>    
+        <lightning:select name="eventType" 
+                          aura:id="selectOne"
+                          label="Which type of event you are planning?"
+                          messageWhenValueMissing="Choose one!"
+                          onChange="alert('hi')" 
+                          required="true">
+            <option value="">choose one...</option>
+            <option value="a076g000002XlIMAA0">Sport</option>
+            <option value="a076g000002XjrxAAC">Party</option>
+            <option value="a076g000002XlIMAA0">Festivals</option>
+            <option value="a076g000002Xr4GAAS">Meeting</option>
+            <option value="a076g000002Xr4KAAS">Personal</option>
+            <option value="a076g000002Xr4PAAS">Thanksgiving</option>
+            
+        </lightning:select>
+    	<ui:button  label="Get Photographers" press="{!c.onEventTypeChange}"/>
+    <aura:iteration var="r" items="{!v.reg}" >     
+        <lightning:card>
+            <aura:set attribute="title">
+               <lightning:avatar size="large"
+                                 variant="circle"
+                                 src="https://developer.salesforce.com/docs/component-library/app/images/examples/avatar1.jpg" 
+                                 fallbackIconName="standard:avatar" 
+                                 alternativeText="{!r.Name}" 
+                                 class="slds-m-right_small"/>
+                {!r.Name}        	
+                <lightning:formattedAddress 
+                                            street="{!r.Address__c}"
+                                            city="{!r.City__c}"
+                                            province="{!r.State__c}"
+                                            postalCode="{!r.Zipcode__c}"
+                                            >
+                </lightning:formattedAddress>     
+                <p><lightning:clickToDial value="{!r.Phone__c}"/></p>
+                <p><lightning:formattedEmail value="{!r.Email__c + '?subject=Looking%20for%20photographe%20' }"  
+                                             label="Email This Photographer" />
+                </p>
+            </aura:set>
+        </lightning:card>
+    </aura:iteration>        
+</aura:component>
