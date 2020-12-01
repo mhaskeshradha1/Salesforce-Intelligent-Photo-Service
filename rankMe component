@@ -1,0 +1,25 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,forceCommunity:availableForAllPageTypes" controller="Rankmefirst" access="global" >
+    <aura:attribute name="reg" type="ContentDocument[]"/>
+    <ui:button label="Get Albums" press="{!c.myAction}"/>
+    <table>
+    <tr>
+        <td> Id </td>
+        <td>Title</td>
+        <td>Rank Me</td>
+        <td>Created By</td>
+        <td>Owner</td>
+        </tr>
+    <aura:iteration var="r" items="{!v.reg}" >
+        <tr>
+            <td>{!r.Id}</td>
+            <td>{!r.Name}</td>
+            <td>
+                <lightning:button label="Rank Photos" onclick="{!c.rankAlbum}" value="{!r.Id}"/>
+            </td>
+            <td>{!r.LastModifiedById}</td>
+            <td>{!r.OwnerId}</td>
+        </tr>
+    </aura:iteration>
+        
+    </table>
+</aura:component>
