@@ -1,0 +1,35 @@
+({
+   myAction : function(component, event, helper) {
+        var action = component.get("c.getAllAlbums");
+        action.setCallback(this, function(response){
+            var name = response.getState();
+            if (name === "SUCCESS") {
+                component.set("v.reg", response.getReturnValue());
+            }
+        });
+     $A.enqueueAction(action);
+    },
+   rankAlbum : function(component, event, helper) {
+       
+       console.log(component);
+       console.log(component.get("c.getFilesForAlbum"));
+       var idAlbum = event.getSource().get("v.value");
+       var action = component.get("c.getFilesForAlbum");
+       
+       console.log("111111111111111111     idAlbum");
+       action.setParams({
+            idAlbum: idAlbum
+        });
+       console.log(idAlbum);
+                
+       action.setCallback(this, function(response){
+            var name = response.getState();
+            if (name === "SUCCESS") {
+                console.log("How may total photos processedd ?? " , response.getReturnValue());
+                alert("Count of updated ranks = " +  response.getReturnValue().length);
+                //component.set("v.reg", response.getReturnValue());
+            }
+        });
+     $A.enqueueAction(action);
+    }
+})
