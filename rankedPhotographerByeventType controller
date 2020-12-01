@@ -1,0 +1,26 @@
+({
+	onEventTypeChange : function(component, event, helper) {
+        var idEventType = component.find("selectOne").get("v.value");
+        
+        if(idEventType === ''){
+           alert("Please select event type");
+        	return;
+        }
+        
+		var action = component.get("c.getPhotographerByEventType");
+        action.setParams({
+            eventTypeId: idEventType
+        });
+        
+        action.setCallback(this, function(response){
+            var name = response.getState();
+            if (name === "SUCCESS") {
+                
+                console.log(" Got from server ", response.getReturnValue());
+                console.log(" Got from server ", response.getReturnValue().keys());
+                component.set("v.reg", response.getReturnValue());
+            }
+        });
+       $A.enqueueAction(action);
+	}
+})
